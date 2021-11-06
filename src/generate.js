@@ -213,6 +213,11 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
 			}
 
+			const typeInFile = protocolClasses.some(({ name }) => name === type);
+			if (typeInFile) {
+				type = `[${type}](#${type.toLowerCase()})`;
+			}
+
 			requestDocumentation += `\n| ${he.encode(type)} | ${requestParameter.name} |  |`;
 		}
 	}
@@ -257,6 +262,11 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 				}
 
 				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
+			}
+
+			const typeInFile = protocolClasses.some(({ name }) => name === type);
+			if (typeInFile) {
+				type = `[${type}](#${type.toLowerCase()})`;
 			}
 
 			responseDocumentation += `\n| ${he.encode(type)} | ${responseParameter.name} |  |`;

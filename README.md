@@ -22,5 +22,5 @@ for (const tree of trees) {
 }
 ```
 
-## TODO
-- Implement NEX type hyperlinks. Currently all types are just their raw string names as found in the DDL parse tree
+## Notes
+Not all titles have complete DDL Parse Trees. In those cases this tool will generate empty protocols
