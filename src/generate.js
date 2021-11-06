@@ -18,6 +18,11 @@ function generateDocumentation(tree, outputPath) {
 		if (element.body instanceof DDL.DDLClassDeclaration) {
 			const className = element.body.typeDeclaration.declaration.nameSpaceItem.parseTreeItem1.name.value;
 			const classMembers = [];
+			let classParentClassName = element.body.parentClassName.value;
+
+			if (classParentClassName === '') {
+				classParentClassName = 'Structure';
+			}
 
 			for (const { body: classMember } of element.body.classMembers.elements) {
 				const classMemberName = classMember.nameSpaceItem.parseTreeItem1.name.value;
@@ -31,8 +36,9 @@ function generateDocumentation(tree, outputPath) {
 
 			protocolClasses.push({
 				name: className,
-				members: classMembers
-			})
+				members: classMembers,
+				parentClassName: classParentClassName
+			});
 		}
 
 		if (element.body instanceof DDL.DDLProtocolDeclaration) {
@@ -161,7 +167,7 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 }
 
 function buildClassDocumentation(protocolClass) {
-	let classDocumentation = `## ${protocolClass.name}`;
+	let classDocumentation = `## ${protocolClass.name} (${protocolClass.parentClassName})`;
 	classDocumentation += '\n| Name | Type |';
 	classDocumentation += '\n| --- | --- |';
 
