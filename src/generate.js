@@ -1,5 +1,6 @@
 const DDL = require('ddl-parser');
 const fs = require('fs-extra');
+const he = require('he');
 
 const kinnayWikiBase = 'https://github.com/kinnay/NintendoClients/wiki';
 
@@ -107,10 +108,7 @@ function buildMarkDown(protocolName, protocolID, protocolMethods, protocolClasse
 
 	if (protocolClasses.length > 0) {
 		mdFileContents += '\n\n# Types';
-		for (const protocolClass of protocolClasses) {
-			const classDocumentation = buildClassDocumentation(protocolClass);
-			mdFileContents += `\n\n${classDocumentation}`;
-		}
+		mdFileContents += buildClassesDocumentation(protocolClasses);
 	}
 
 	return mdFileContents;
@@ -142,7 +140,7 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 		requestDocumentation += '\n| --- | --- | --- |';
 
 		for (const requestParameter of protocolMethod.requestParameters) {
-			requestDocumentation += `\n| ${requestParameter.value} | ${requestParameter.name} |  |`;
+			requestDocumentation += `\n| ${he.encode(requestParameter.value)} | ${requestParameter.name} |  |`;
 		}
 	}
 
@@ -157,7 +155,7 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 		responseDocumentation += '\n| --- | --- | --- |';
 
 		for (const responseParameter of protocolMethod.responseParameters) {
-			responseDocumentation += `\n| ${responseParameter.value} | ${responseParameter.name} |  |`;
+			responseDocumentation += `\n| ${he.encode(responseParameter.value)} | ${responseParameter.name} |  |`;
 		}
 	}
 
@@ -166,16 +164,36 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 	return methodDocumentation;
 }
 
-function buildClassDocumentation(protocolClass) {
-	let classDocumentation = `## ${protocolClass.name} (${protocolClass.parentClassName})`;
-	classDocumentation += '\n| Name | Type |';
-	classDocumentation += '\n| --- | --- |';
+function buildClassesDocumentation(protocolClasses) {
+	let classesDocumentation = '';
 
-	for (const member of protocolClass.members) {
-		classDocumentation += `\n| ${member.name} | ${member.type} |`;
+	for (const protocolClass of protocolClasses) {
+		const parentClassInFile = protocolClasses.some(({ name }) => name === protocolClass.parentClassName);
+		let parentClassName = protocolClass.parentClassName;
+		
+		if (parentClassInFile) {
+			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()})`;
+		}
+
+		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
+		classDocumentation += '\n| Name | Type |';
+		classDocumentation += '\n| --- | --- |';
+
+		for (const member of protocolClass.members) {
+			const memberTypeInFile = protocolClasses.some(({ name }) => name === member.type);
+			let memberTypeName = member.type;
+
+			if (memberTypeInFile) {
+				memberTypeName = `[${memberTypeName}](#${memberTypeName.toLowerCase()})`;
+			}
+
+			classDocumentation += `\n| ${member.name} | ${he.encode(memberTypeName)} |`;
+		}
+
+		classesDocumentation += classDocumentation;
 	}
 
-	return classDocumentation;
+	return classesDocumentation;
 }
 
 module.exports = {
