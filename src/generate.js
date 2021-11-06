@@ -27,6 +27,25 @@ const COMMON_TYPE_CONVERSIONS = {
 	'any<Data,string>': 'AnyDataHolder' // unsure if this can look different
 };
 
+// Links to common types in Kinnay's wiki
+const COMMON_TYPE_LINKS = {
+	'String': `${kinnayWikiBase}/NEX-Common-Types#string`,
+	'Buffer': `${kinnayWikiBase}/NEX-Common-Types#buffer`,
+	'qBuffer': `${kinnayWikiBase}/NEX-Common-Types#qbuffer`,
+	'List': `${kinnayWikiBase}/NEX-Common-Types#list`,
+	'Map': `${kinnayWikiBase}/NEX-Common-Types#map`,
+	'PID': `${kinnayWikiBase}/NEX-Common-Types#pid`,
+	'Result': `${kinnayWikiBase}/NEX-Common-Types#result`,
+	'DateTime': `${kinnayWikiBase}/NEX-Common-Types#datetime`,
+	'StationURL': `${kinnayWikiBase}/NEX-Common-Types#stationurl`,
+	'Variant': `${kinnayWikiBase}/NEX-Common-Types#variant`,
+	'Structure': `${kinnayWikiBase}/NEX-Common-Types#structure`,
+	'Data': `${kinnayWikiBase}/NEX-Common-Types#data`,
+	'AnyDataHolder': `${kinnayWikiBase}/NEX-Common-Types#anydataholder`,
+	'RVConnectionData': `${kinnayWikiBase}/NEX-Common-Types#rvconnectiondata`,
+	'ResultRange': `${kinnayWikiBase}/NEX-Common-Types#resultrange`
+};
+
 function generateDocumentation(tree, outputPath) {
 	/*-------------------------------------------
 	| First parse out the larger DDL parse tree |
@@ -125,7 +144,7 @@ function buildMarkDown(protocolName, protocolID, protocolMethods, protocolClasse
 
 	for (const protocolMethod of protocolMethods) {
 		const methodID = protocolMethods.indexOf(protocolMethod) + 1;
-		const methodDocumentation = buildMethodDocumentation(protocolMethod, methodID);
+		const methodDocumentation = buildMethodDocumentation(protocolMethod, methodID, protocolClasses);
 		mdFileContents += `\n\n${methodDocumentation}`;
 	}
 
@@ -151,7 +170,7 @@ function buildMethodsTable(protocolMethods) {
 	return table;
 }
 
-function buildMethodDocumentation(protocolMethod, methodID) {
+function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 	let methodDocumentation = `# (${methodID}) ${protocolMethod.name}`;
 
 	let requestDocumentation = '\n\n## Request';
@@ -167,6 +186,31 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 
 			if (COMMON_TYPE_CONVERSIONS[type]) {
 				type = COMMON_TYPE_CONVERSIONS[type];
+			}
+
+			if (COMMON_TYPE_LINKS[type]) {
+				type = `[${type}](${COMMON_TYPE_LINKS[type]})`
+			}
+
+			// Lists are defined in multiple ways
+			if (type.startsWith('std_list<') || type.startsWith('qvector<') || type.startsWith('qlist<')) {
+				const listParts = type.split(/[<>]/);
+				let listType = listParts[1];
+				const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
+
+				if (listTypeInFile) {
+					listType = `[${listType}](#${listType.toLowerCase()})`;
+				}
+
+				if (COMMON_TYPE_CONVERSIONS[listType]) {
+					listType = COMMON_TYPE_CONVERSIONS[listType];
+				}
+
+				if (COMMON_TYPE_LINKS[listType]) {
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+				}
+
+				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
 			}
 
 			requestDocumentation += `\n| ${he.encode(type)} | ${requestParameter.name} |  |`;
@@ -188,6 +232,31 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 
 			if (COMMON_TYPE_CONVERSIONS[type]) {
 				type = COMMON_TYPE_CONVERSIONS[type];
+			}
+
+			if (COMMON_TYPE_LINKS[type]) {
+				type = `[${type}](${COMMON_TYPE_LINKS[type]})`
+			}
+
+			// Lists are defined in multiple ways
+			if (type.startsWith('std_list<') || type.startsWith('qvector<') || type.startsWith('qlist<')) {
+				const listParts = type.split(/[<>]/);
+				let listType = listParts[1];
+				const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
+
+				if (listTypeInFile) {
+					listType = `[${listType}](#${listType.toLowerCase()})`;
+				}
+
+				if (COMMON_TYPE_CONVERSIONS[listType]) {
+					listType = COMMON_TYPE_CONVERSIONS[listType];
+				}
+
+				if (COMMON_TYPE_LINKS[listType]) {
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+				}
+
+				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
 			}
 
 			responseDocumentation += `\n| ${he.encode(type)} | ${responseParameter.name} |  |`;
@@ -224,6 +293,31 @@ function buildClassesDocumentation(protocolClasses) {
 
 			if (COMMON_TYPE_CONVERSIONS[memberTypeName]) {
 				memberTypeName = COMMON_TYPE_CONVERSIONS[memberTypeName];
+			}
+
+			if (COMMON_TYPE_LINKS[memberTypeName]) {
+				memberTypeName = `[${memberTypeName}](${COMMON_TYPE_LINKS[memberTypeName]})`
+			}
+
+			// Lists are defined in multiple ways
+			if (memberTypeName.startsWith('std_list<') || memberTypeName.startsWith('qvector<') || memberTypeName.startsWith('qlist<')) {
+				const listParts = memberTypeName.split(/[<>]/);
+				let listType = listParts[1];
+				const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
+
+				if (listTypeInFile) {
+					listType = `[${listType}](#${listType.toLowerCase()})`;
+				}
+
+				if (COMMON_TYPE_CONVERSIONS[listType]) {
+					listType = COMMON_TYPE_CONVERSIONS[listType];
+				}
+
+				if (COMMON_TYPE_LINKS[listType]) {
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+				}
+
+				memberTypeName = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
 			}
 
 			classDocumentation += `\n| ${member.name} | ${he.encode(memberTypeName)} |`;
