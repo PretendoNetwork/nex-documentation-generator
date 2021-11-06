@@ -4,6 +4,29 @@ const he = require('he');
 
 const kinnayWikiBase = 'https://github.com/kinnay/NintendoClients/wiki';
 
+// Standardize the type names to match Kinnay's wiki
+const COMMON_TYPE_CONVERSIONS = {
+	'qvector<byte>': 'Buffer',
+	'byte': 'Uint8',
+	'uint16': 'Uint16',
+	'uint32': 'Uint32',
+	'uint64': 'Uint64',
+	'int8': 'Sint8',
+	'int16': 'Sint16',
+	'int32': 'Sint32',
+	'int64': 'Sint64',
+	'string': 'String',
+	'bool': 'Bool',
+	'datetime': 'DateTime',
+	'qresult': 'Result',
+	'stationurl': 'StationURL',
+	'qBuffer': 'qBuffer', // Just so it's found
+	'buffer': 'Buffer',
+	'ResultRange': 'ResultRange', // Just so it's found
+	'variant': 'Variant',
+	'any<Data,string>': 'AnyDataHolder' // unsure if this can look different
+};
+
 function generateDocumentation(tree, outputPath) {
 	/*-------------------------------------------
 	| First parse out the larger DDL parse tree |
@@ -140,7 +163,13 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 		requestDocumentation += '\n| --- | --- | --- |';
 
 		for (const requestParameter of protocolMethod.requestParameters) {
-			requestDocumentation += `\n| ${he.encode(requestParameter.value)} | ${requestParameter.name} |  |`;
+			let type = requestParameter.value;
+
+			if (COMMON_TYPE_CONVERSIONS[type]) {
+				type = COMMON_TYPE_CONVERSIONS[type];
+			}
+
+			requestDocumentation += `\n| ${he.encode(type)} | ${requestParameter.name} |  |`;
 		}
 	}
 
@@ -155,7 +184,13 @@ function buildMethodDocumentation(protocolMethod, methodID) {
 		responseDocumentation += '\n| --- | --- | --- |';
 
 		for (const responseParameter of protocolMethod.responseParameters) {
-			responseDocumentation += `\n| ${he.encode(responseParameter.value)} | ${responseParameter.name} |  |`;
+			let type = responseParameter.value;
+
+			if (COMMON_TYPE_CONVERSIONS[type]) {
+				type = COMMON_TYPE_CONVERSIONS[type];
+			}
+
+			responseDocumentation += `\n| ${he.encode(type)} | ${responseParameter.name} |  |`;
 		}
 	}
 
@@ -180,11 +215,15 @@ function buildClassesDocumentation(protocolClasses) {
 		classDocumentation += '\n| --- | --- |';
 
 		for (const member of protocolClass.members) {
-			const memberTypeInFile = protocolClasses.some(({ name }) => name === member.type);
 			let memberTypeName = member.type;
+			const memberTypeInFile = protocolClasses.some(({ name }) => name === memberTypeName);
 
 			if (memberTypeInFile) {
 				memberTypeName = `[${memberTypeName}](#${memberTypeName.toLowerCase()})`;
+			}
+
+			if (COMMON_TYPE_CONVERSIONS[memberTypeName]) {
+				memberTypeName = COMMON_TYPE_CONVERSIONS[memberTypeName];
 			}
 
 			classDocumentation += `\n| ${member.name} | ${he.encode(memberTypeName)} |`;
