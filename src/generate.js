@@ -279,6 +279,14 @@ function buildClassesDocumentation(protocolClasses) {
 			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()})`;
 		}
 
+		if (COMMON_TYPE_CONVERSIONS[parentClassName]) {
+			parentClassName = COMMON_TYPE_CONVERSIONS[parentClassName];
+		}
+
+		if (COMMON_TYPE_LINKS[parentClassName]) {
+			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`
+		}
+
 		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
 		classDocumentation += '\n| Name | Type |';
 		classDocumentation += '\n| --- | --- |';
