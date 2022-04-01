@@ -1,7 +1,27 @@
 const DDL = require('ddl-parser');
 const fs = require('fs-extra');
 const he = require('he');
+require('colors');
 
+// Non ES module version of https://github.com/sindresorhus/log-symbols
+const main = {
+	info: 'ℹ'.blue,
+	success: '✔'.green,
+	warning: '⚠'.yellow,
+	error: '✖'.red,
+};
+
+const fallback = {
+	info: 'i'.blue,
+	success: '√'.green,
+	warning: '‼'.yellow,
+	error: '×'.red,
+};
+
+const logSymbols = isUnicodeSupported() ? main : fallback;
+
+
+let unknownProtocolNameCounter = 0;
 const kinnayWikiBase = 'https://github.com/kinnay/NintendoClients/wiki';
 
 // Standardize the type names to match Kinnay's wiki
@@ -89,6 +109,13 @@ function generateDocumentation(tree, outputPath) {
 			protocolName = element.body.declaration.nameSpaceItem.parseTreeItem1.name.value;
 			protocolID = 'Unknown ID'; // TODO: Find a way to find this!!
 
+			if (!protocolName) {
+				protocolName = `Unknown Protocol - ${unknownProtocolNameCounter++}`;
+				console.log(`[${logSymbols.warning}]`, `Could not determine real protocol name. Defaulting to ${protocolName}`.yellow.bold);
+			}
+
+			console.log(`[${logSymbols.info}]`, `Found NEX protocol: ${protocolName}`.cyan.bold);
+
 			for (const { body: method} of element.body.methods.elements) {
 				const methodName = method.methodDeclaration.declaration.nameSpaceItem.parseTreeItem1.name.value;
 				const methodRequestParameters = [];
@@ -123,17 +150,19 @@ function generateDocumentation(tree, outputPath) {
 					responseParameters: methodResponseParameters,
 				});
 			}
+
+
+			const markdown = buildMarkDown(protocolName, protocolID, protocolMethods, protocolClasses);
+			fs.ensureDirSync(`${outputPath}`);
+			fs.writeFileSync(`${outputPath}/${protocolName}.md`, markdown);
+
+			console.log(`[${logSymbols.success}]`, `Writing protocol documentation to ${outputPath}/${protocolName}.md\n`.green.bold);
 		}
 	}
 
 	/*------------------------------------------------
 	| Now start building a .md file for the protocol |
 	------------------------------------------------*/
-
-	const markdown = buildMarkDown(protocolName, protocolID, protocolMethods, protocolClasses);
-
-	fs.ensureDirSync(`${outputPath}`);
-	fs.writeFileSync(`${outputPath}/${protocolName}.md`, markdown);
 }
 
 function buildMarkDown(protocolName, protocolID, protocolMethods, protocolClasses) {
@@ -189,7 +218,7 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 			}
 
 			if (COMMON_TYPE_LINKS[type]) {
-				type = `[${type}](${COMMON_TYPE_LINKS[type]})`
+				type = `[${type}](${COMMON_TYPE_LINKS[type]})`;
 			}
 
 			// Lists are defined in multiple ways
@@ -207,10 +236,10 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 				}
 
 				if (COMMON_TYPE_LINKS[listType]) {
-					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`;
 				}
 
-				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
+				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`;
 			}
 
 			const typeInFile = protocolClasses.some(({ name }) => name === type);
@@ -240,7 +269,7 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 			}
 
 			if (COMMON_TYPE_LINKS[type]) {
-				type = `[${type}](${COMMON_TYPE_LINKS[type]})`
+				type = `[${type}](${COMMON_TYPE_LINKS[type]})`;
 			}
 
 			// Lists are defined in multiple ways
@@ -258,10 +287,10 @@ function buildMethodDocumentation(protocolMethod, methodID, protocolClasses) {
 				}
 
 				if (COMMON_TYPE_LINKS[listType]) {
-					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`;
 				}
 
-				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
+				type = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`;
 			}
 
 			const typeInFile = protocolClasses.some(({ name }) => name === type);
@@ -294,7 +323,7 @@ function buildClassesDocumentation(protocolClasses) {
 		}
 
 		if (COMMON_TYPE_LINKS[parentClassName]) {
-			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`
+			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`;
 		}
 
 		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
@@ -302,24 +331,24 @@ function buildClassesDocumentation(protocolClasses) {
 		classDocumentation += '\n| --- | --- |';
 
 		for (const member of protocolClass.members) {
-			let memberTypeName = member.type;
-			const memberTypeInFile = protocolClasses.some(({ name }) => name === memberTypeName);
+			let memberType = member.type;
+			const memberTypeInFile = protocolClasses.some(({ name }) => name === memberType);
 
 			if (memberTypeInFile) {
-				memberTypeName = `[${memberTypeName}](#${memberTypeName.toLowerCase()})`;
+				memberType = `[${memberType}](#${memberType.toLowerCase()})`;
 			}
 
-			if (COMMON_TYPE_CONVERSIONS[memberTypeName]) {
-				memberTypeName = COMMON_TYPE_CONVERSIONS[memberTypeName];
+			if (COMMON_TYPE_CONVERSIONS[memberType]) {
+				memberType = COMMON_TYPE_CONVERSIONS[memberType];
 			}
 
-			if (COMMON_TYPE_LINKS[memberTypeName]) {
-				memberTypeName = `[${memberTypeName}](${COMMON_TYPE_LINKS[memberTypeName]})`
+			if (COMMON_TYPE_LINKS[memberType]) {
+				memberType = `[${memberType}](${COMMON_TYPE_LINKS[memberType]})`;
 			}
 
 			// Lists are defined in multiple ways
-			if (memberTypeName.startsWith('std_list<') || memberTypeName.startsWith('qvector<') || memberTypeName.startsWith('qlist<')) {
-				const listParts = memberTypeName.split(/[<>]/);
+			if (memberType.startsWith('std_list<') || memberType.startsWith('qvector<') || memberType.startsWith('qlist<')) {
+				const listParts = memberType.split(/[<>]/);
 				let listType = listParts[1];
 				const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
 
@@ -332,13 +361,13 @@ function buildClassesDocumentation(protocolClasses) {
 				}
 
 				if (COMMON_TYPE_LINKS[listType]) {
-					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`
+					listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`;
 				}
 
-				memberTypeName = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`
+				memberType = `[List](${kinnayWikiBase + '/NEX-Common-Types#list'})<${listType}>`;
 			}
 
-			classDocumentation += `\n| ${member.name} | ${he.encode(memberTypeName)} |`;
+			classDocumentation += `\n| ${member.name} | ${he.encode(memberType)} |`;
 		}
 
 		classesDocumentation += classDocumentation;
@@ -350,3 +379,17 @@ function buildClassesDocumentation(protocolClasses) {
 module.exports = {
 	generateDocumentation
 };
+
+function isUnicodeSupported() {
+	if (process.platform !== 'win32') {
+		return process.env.TERM !== 'linux'; // Linux console (kernel)
+	}
+
+	return Boolean(process.env.CI)
+		|| Boolean(process.env.WT_SESSION) // Windows Terminal
+		|| process.env.ConEmuTask === '{cmd::Cmder}' // ConEmu and cmder
+		|| process.env.TERM_PROGRAM === 'vscode'
+		|| process.env.TERM === 'xterm-256color'
+		|| process.env.TERM === 'alacritty'
+		|| process.env.TERMINAL_EMULATOR === 'JetBrains-JediTerm';
+}
