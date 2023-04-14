@@ -19,5 +19,8 @@
   },
   "devDependencies": {
     "esserializer": "^1.2.2"
+  },
+  "bin": {
+    "generate-nex-docs": "./build-docs.js"
   }
 }
