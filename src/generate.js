@@ -251,7 +251,7 @@ function buildClassesDocumentation(protocolClasses) {
 		let parentClassName = protocolClass.parentClassName;
 
 		if (parentClassInFile) {
-			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()})`;
+			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()}-structure)`;
 		}
 
 		if (COMMON_TYPE_CONVERSIONS[parentClassName]) {
@@ -262,7 +262,14 @@ function buildClassesDocumentation(protocolClasses) {
 			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`;
 		}
 
-		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
+		const structureClassName = `[Structure](${COMMON_TYPE_LINKS['Structure']})`
+
+		let classDocumentation = `\n\n## ${protocolClass.name} (${structureClassName})`;
+
+		if (parentClassName !== structureClassName) {
+			classDocumentation += `\n> This structure inherits from ${parentClassName}`
+			classDocumentation += '\n'
+		}
 
 		if (protocolClass.members.length === 0) {
 			classDocumentation += '\nThis structure does not contain any fields.';
@@ -311,7 +318,7 @@ function typeToMarkdown(type, protocolClasses) {
 
 	const isProtocolClass = protocolClasses.some(({ name }) => name === type);
 	if (isProtocolClass) {
-		type = `[${type}](#${type.toLowerCase()})`;
+		type = `[${type}](#${type.toLowerCase()}-structure)`;
 	}
 
 	return type;
@@ -328,7 +335,7 @@ function listTypeToMarkdown(type, protocolClasses) {
 	const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
 
 	if (listTypeInFile) {
-		listType = `[${listType}](#${listType.toLowerCase()})`;
+		listType = `[${listType}](#${listType.toLowerCase()}-structure)`;
 	}
 
 	if (COMMON_TYPE_CONVERSIONS[listType]) {
@@ -339,7 +346,7 @@ function listTypeToMarkdown(type, protocolClasses) {
 		listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`;
 	}
 
-	return `[List](${KINNAY_WIKI_BASE + '/NEX-Common-Types#list'})<${listType}>`;
+	return `[List](${COMMON_TYPE_LINKS['List']})<${listType}>`;
 }
 
 module.exports = {
