@@ -85,6 +85,7 @@ function generateDocumentation(tree, outputPath) {
 		unknownDDLCount += 1;
 		const jsonOutput = `${outputPath}/ddl-${unknownDDLCount++}.json`;
 		console.log(`[${logSymbols.warning}]`, `Found DDL tree with no protocol declaration. Writing to ${jsonOutput}\n`.yellow.bold);
+		fs.ensureDirSync(`${outputPath}`);
 		fs.writeFileSync(jsonOutput, JSON.stringify(tree, null, 4));
 	} else {
 
@@ -250,7 +251,7 @@ function buildClassesDocumentation(protocolClasses) {
 		let parentClassName = protocolClass.parentClassName;
 
 		if (parentClassInFile) {
-			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()})`;
+			parentClassName = `[${parentClassName}](#${parentClassName.toLowerCase()}-structure)`;
 		}
 
 		if (COMMON_TYPE_CONVERSIONS[parentClassName]) {
@@ -261,13 +262,25 @@ function buildClassesDocumentation(protocolClasses) {
 			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`;
 		}
 
-		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
-		classDocumentation += '\n| Name | Type |';
-		classDocumentation += '\n| --- | --- |';
+		const structureClassName = `[Structure](${COMMON_TYPE_LINKS['Structure']})`;
 
-		for (const member of protocolClass.members) {
-			const memberType = typeToMarkdown(member.type, protocolClasses);
-			classDocumentation += `\n| ${member.name} | ${he.encode(memberType)} |`;
+		let classDocumentation = `\n\n## ${protocolClass.name} (${structureClassName})`;
+
+		if (parentClassName !== structureClassName) {
+			classDocumentation += `\n> This structure inherits from ${parentClassName}`;
+			classDocumentation += '\n';
+		}
+
+		if (protocolClass.members.length === 0) {
+			classDocumentation += '\nThis structure does not contain any fields.';
+		} else {
+			classDocumentation += '\n| Type | Name |';
+			classDocumentation += '\n| --- | --- |';
+
+			for (const member of protocolClass.members) {
+				const memberType = typeToMarkdown(member.type, protocolClasses);
+				classDocumentation += `\n| ${he.encode(memberType)} | ${member.name} |`;
+			}
 		}
 
 		classesDocumentation += classDocumentation;
@@ -305,7 +318,7 @@ function typeToMarkdown(type, protocolClasses) {
 
 	const isProtocolClass = protocolClasses.some(({ name }) => name === type);
 	if (isProtocolClass) {
-		type = `[${type}](#${type.toLowerCase()})`;
+		type = `[${type}](#${type.toLowerCase()}-structure)`;
 	}
 
 	return type;
@@ -322,7 +335,7 @@ function listTypeToMarkdown(type, protocolClasses) {
 	const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
 
 	if (listTypeInFile) {
-		listType = `[${listType}](#${listType.toLowerCase()})`;
+		listType = `[${listType}](#${listType.toLowerCase()}-structure)`;
 	}
 
 	if (COMMON_TYPE_CONVERSIONS[listType]) {
@@ -333,7 +346,7 @@ function listTypeToMarkdown(type, protocolClasses) {
 		listType = `[${listType}](${COMMON_TYPE_LINKS[listType]})`;
 	}
 
-	return `[List](${KINNAY_WIKI_BASE + '/NEX-Common-Types#list'})<${listType}>`;
+	return `[List](${COMMON_TYPE_LINKS['List']})<${listType}>`;
 }
 
 module.exports = {
