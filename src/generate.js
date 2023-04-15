@@ -262,13 +262,13 @@ function buildClassesDocumentation(protocolClasses) {
 			parentClassName = `[${parentClassName}](${COMMON_TYPE_LINKS[parentClassName]})`;
 		}
 
-		const structureClassName = `[Structure](${COMMON_TYPE_LINKS['Structure']})`
+		const structureClassName = `[Structure](${COMMON_TYPE_LINKS['Structure']})`;
 
 		let classDocumentation = `\n\n## ${protocolClass.name} (${structureClassName})`;
 
 		if (parentClassName !== structureClassName) {
-			classDocumentation += `\n> This structure inherits from ${parentClassName}`
-			classDocumentation += '\n'
+			classDocumentation += `\n> This structure inherits from ${parentClassName}`;
+			classDocumentation += '\n';
 		}
 
 		if (protocolClass.members.length === 0) {
