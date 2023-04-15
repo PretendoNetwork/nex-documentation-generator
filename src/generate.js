@@ -67,6 +67,8 @@ const COMMON_TYPE_LINKS = {
 let unknownDDLCount = 0;
 let unknownProtocolNameCounter = 0;
 
+const SEEN_PROTOCOLS = {};
+
 function generateDocumentation(tree, outputPath) {
 
 	// * First parse out the larger DDL parse tree
@@ -76,10 +78,10 @@ function generateDocumentation(tree, outputPath) {
 	let protocolName;
 	let protocolID;
 
-	const protocolDeclaration = tree.rootNamespace.elements.find(element => element.body instanceof DDL.DDLProtocolDeclaration);
+	const protocolDeclarations = tree.rootNamespace.elements.filter(element => element.body instanceof DDL.DDLProtocolDeclaration);
 	const classDeclarations = tree.rootNamespace.elements.filter(element => element.body instanceof DDL.DDLClassDeclaration);
 
-	if (!protocolDeclaration) {
+	if (protocolDeclarations.length === 0) {
 		unknownDDLCount += 1;
 		const jsonOutput = `${outputPath}/ddl-${unknownDDLCount++}.json`;
 		console.log(`[${logSymbols.warning}]`, `Found DDL tree with no protocol declaration. Writing to ${jsonOutput}\n`.yellow.bold);
@@ -113,59 +115,69 @@ function generateDocumentation(tree, outputPath) {
 			});
 		}
 
-		// * Start building the protocol definition
-		// ? Could also be element.body.declaration.unitName.value
-		protocolName = protocolDeclaration.body.declaration.nameSpaceItem.parseTreeItem1.name.value;
-		protocolID = 'Unknown ID'; // TODO - Find a way to find this!!
+		for (const protocolDeclaration of protocolDeclarations) {
+			// * Start building the protocol definition
+			// ? Could also be element.body.declaration.unitName.value
+			protocolName = protocolDeclaration.body.declaration.nameSpaceItem.parseTreeItem1.name.value;
+			protocolID = 'Unknown ID'; // TODO - Find a way to find this!!
 
-		if (!protocolName) {
-			protocolName = `Unknown Protocol - ${unknownProtocolNameCounter++}`;
-			console.log(`[${logSymbols.warning}]`, `Could not determine real protocol name. Defaulting to ${protocolName}`.yellow.bold);
-		}
-
-		console.log(`[${logSymbols.info}]`, `Found NEX protocol: ${protocolName}`.cyan.bold);
-
-		for (const { body: method} of protocolDeclaration.body.methods.elements) {
-			const methodName = method.methodDeclaration.declaration.nameSpaceItem.parseTreeItem1.name.value;
-			const methodRequestParameters = [];
-			const methodResponseParameters = [];
-
-			// ? These are also stored in method.methodDeclaration.parameters
-			for (const { body: parameter } of method.parameters.elements) {
-				const parameterName = parameter.variable.nameSpaceItem.parseTreeItem1.name.value;
-				// ? This also seems to be stored in parameter.variable.declarationUse
-				const parameterValue = parameter.declarationUse.name.value;
-				const parameterType = parameter.type;
-				const paramaterDefinition = {
-					name: parameterName,
-					value: parameterValue
-				};
-
-				if (parameterType === 1) {
-					methodRequestParameters.push(paramaterDefinition);
-				} else if (parameterType === 2) {
-					methodResponseParameters.push(paramaterDefinition);
-				} else if (parameter instanceof DDL.DDLReturnValue) {
-					// ! ReturnValue types always come first
-					methodResponseParameters.unshift(paramaterDefinition);
+			if (!protocolName) {
+				protocolName = `Unknown Protocol - ${unknownProtocolNameCounter++}`;
+				console.log(`[${logSymbols.warning}]`, `Could not determine real protocol name. Defaulting to ${protocolName}`.yellow.bold);
+			} else {
+				// * Just in case there's duplicate named protocols
+				if (!SEEN_PROTOCOLS[protocolName]) {
+					SEEN_PROTOCOLS[protocolName] = 1;
 				} else {
-					throw new Error(`Unknown paramater type ${parameterType}`);
+					SEEN_PROTOCOLS[protocolName] += 1;
+					protocolName = `${protocolName} (${SEEN_PROTOCOLS[protocolName]})`;
 				}
 			}
 
-			protocolMethods.push({
-				name: methodName,
-				requestParameters: methodRequestParameters,
-				responseParameters: methodResponseParameters,
-			});
+			console.log(`[${logSymbols.info}]`, `Found NEX protocol: ${protocolName}`.cyan.bold);
+
+			for (const { body: method} of protocolDeclaration.body.methods.elements) {
+				const methodName = method.methodDeclaration.declaration.nameSpaceItem.parseTreeItem1.name.value;
+				const methodRequestParameters = [];
+				const methodResponseParameters = [];
+
+				// ? These are also stored in method.methodDeclaration.parameters
+				for (const { body: parameter } of method.parameters.elements) {
+					const parameterName = parameter.variable.nameSpaceItem.parseTreeItem1.name.value;
+					// ? This also seems to be stored in parameter.variable.declarationUse
+					const parameterValue = parameter.declarationUse.name.value;
+					const parameterType = parameter.type;
+					const paramaterDefinition = {
+						name: parameterName,
+						value: parameterValue
+					};
+
+					if (parameterType === 1) {
+						methodRequestParameters.push(paramaterDefinition);
+					} else if (parameterType === 2) {
+						methodResponseParameters.push(paramaterDefinition);
+					} else if (parameter instanceof DDL.DDLReturnValue) {
+						// ! ReturnValue types always come first
+						methodResponseParameters.unshift(paramaterDefinition);
+					} else {
+						throw new Error(`Unknown paramater type ${parameterType}`);
+					}
+				}
+
+				protocolMethods.push({
+					name: methodName,
+					requestParameters: methodRequestParameters,
+					responseParameters: methodResponseParameters,
+				});
+			}
+
+
+			const markdown = buildMarkdown(protocolName, protocolID, protocolMethods, protocolClasses);
+			fs.ensureDirSync(`${outputPath}`);
+			fs.writeFileSync(`${outputPath}/${protocolName}.md`, markdown);
+
+			console.log(`[${logSymbols.success}]`, `Writing protocol documentation to ${outputPath}/${protocolName}.md\n`.green.bold);
 		}
-
-
-		const markdown = buildMarkdown(protocolName, protocolID, protocolMethods, protocolClasses);
-		fs.ensureDirSync(`${outputPath}`);
-		fs.writeFileSync(`${outputPath}/${protocolName}.md`, markdown);
-
-		console.log(`[${logSymbols.success}]`, `Writing protocol documentation to ${outputPath}/${protocolName}.md\n`.green.bold);
 	}
 }
 

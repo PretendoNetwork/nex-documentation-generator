@@ -18,7 +18,8 @@
     "is-unicode-supported": "^1.2.0"
   },
   "devDependencies": {
-    "esserializer": "^1.2.2"
+    "esserializer": "^1.2.2",
+    "nex-documentation-generator": "github:PretendoNetwork/nex-documentation-generator"
   },
   "bin": {
     "generate-nex-docs": "./build-docs.js"
