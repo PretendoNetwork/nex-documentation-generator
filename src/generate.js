@@ -85,6 +85,7 @@ function generateDocumentation(tree, outputPath) {
 		unknownDDLCount += 1;
 		const jsonOutput = `${outputPath}/ddl-${unknownDDLCount++}.json`;
 		console.log(`[${logSymbols.warning}]`, `Found DDL tree with no protocol declaration. Writing to ${jsonOutput}\n`.yellow.bold);
+		fs.ensureDirSync(`${outputPath}`);
 		fs.writeFileSync(jsonOutput, JSON.stringify(tree, null, 4));
 	} else {
 
@@ -262,12 +263,17 @@ function buildClassesDocumentation(protocolClasses) {
 		}
 
 		let classDocumentation = `\n\n## ${protocolClass.name} (${parentClassName})`;
-		classDocumentation += '\n| Name | Type |';
-		classDocumentation += '\n| --- | --- |';
 
-		for (const member of protocolClass.members) {
-			const memberType = typeToMarkdown(member.type, protocolClasses);
-			classDocumentation += `\n| ${member.name} | ${he.encode(memberType)} |`;
+		if (protocolClass.members.length === 0) {
+			classDocumentation += '\nThis structure does not contain any fields.';
+		} else {
+			classDocumentation += '\n| Type | Name |';
+			classDocumentation += '\n| --- | --- |';
+
+			for (const member of protocolClass.members) {
+				const memberType = typeToMarkdown(member.type, protocolClasses);
+				classDocumentation += `\n| ${he.encode(memberType)} | ${member.name} |`;
+			}
 		}
 
 		classesDocumentation += classDocumentation;
