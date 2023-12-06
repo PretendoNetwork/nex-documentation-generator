@@ -153,14 +153,21 @@ function generateDocumentation(tree, outputPath) {
 						value: parameterValue
 					};
 
-					if (parameterType === 1) {
+					let done = false;
+					if (parameterType & 1) {
 						methodRequestParameters.push(paramaterDefinition);
-					} else if (parameterType === 2) {
+						done = true;
+					}
+
+					if (parameterType & 2) {
 						methodResponseParameters.push(paramaterDefinition);
-					} else if (parameter instanceof DDL.DDLReturnValue) {
+						done = true;
+					}
+
+					if (!done && parameter instanceof DDL.DDLReturnValue) {
 						// ! ReturnValue types always come first
 						methodResponseParameters.unshift(paramaterDefinition);
-					} else {
+					} else if (!done) {
 						throw new Error(`Unknown paramater type ${parameterType}`);
 					}
 				}
