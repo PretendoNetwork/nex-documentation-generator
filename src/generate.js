@@ -341,6 +341,15 @@ function listTypeToMarkdown(type, protocolClasses) {
 	let listType = listParts[1];
 	const listTypeInFile = protocolClasses.some(({ name }) => name === listType);
 
+	if (listParts.length !== 2) {
+		// * Possibly a nested list
+		const subtype = listParts.slice(1).join('<');
+
+		if (isListType(subtype)) {
+			listType = listTypeToMarkdown(subtype, protocolClasses);
+		}
+	}
+
 	if (listTypeInFile) {
 		listType = `[${listType}](#${listType.toLowerCase()}-structure)`;
 	}

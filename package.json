@@ -1,6 +1,6 @@
 {
   "name": "nex-documentation-generator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tool to build out MarkDown documentation for NEX protocols found within 3DS and WiiU game dumps using the games DDL Parse Trees",
   "main": "src/generate.js",
   "scripts": {
